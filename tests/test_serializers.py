@@ -24,7 +24,7 @@ class SerializerTestCase(TestCase):
 
         serializer = PersonSerializer()
         f = serializer.get_fields()
-        self.assertEqual(len(f), 9)
+        self.assertEqual(len(f), 10)
 
         self.assertIsInstance(f['id'], fields.UUIDField)
         self.assertFalse(f['id'].allow_null)
@@ -36,6 +36,11 @@ class SerializerTestCase(TestCase):
 
         self.assertIsInstance(f['alive'], fields.BooleanField)
         self.assertFalse(f['alive'].allow_null)
+
+        self.assertIsInstance(f['gender'], fields.ChoiceField)
+        self.assertTrue(f['gender'].allow_null)
+        self.assertFalse(f['gender'].allow_blank)
+        self.assertEqual(list(f['gender'].choices.keys()), ['male', 'female', None])
 
         self.assertIsInstance(f['weight'], fields.FloatField)
         self.assertTrue(f['weight'].allow_null)
@@ -109,6 +114,7 @@ class SerializationTestCase(TestCase):
         'name': person_instance.name,
         'email': person_instance.email,
         'alive': person_instance.alive,
+        'gender': person_instance.gender,
         'phone': person_instance.phone,
         'weight': person_instance.weight,
         'birth_date': person_instance.birth_date.isoformat(),
@@ -162,6 +168,7 @@ class NestedSerializationTestCase(TestCase):
             'name': house_dataclass.owner.name,
             'email': house_dataclass.owner.email,
             'alive': house_dataclass.owner.alive,
+            'gender': house_dataclass.owner.gender,
             'phone': house_dataclass.owner.phone,
             'weight': house_dataclass.owner.weight,
             'birth_date': house_dataclass.owner.birth_date.isoformat(),
@@ -173,6 +180,7 @@ class NestedSerializationTestCase(TestCase):
                 'name': house_dataclass.residents[0].name,
                 'email': house_dataclass.residents[0].email,
                 'alive': house_dataclass.residents[0].alive,
+                'gender': house_dataclass.residents[0].gender,
                 'phone': house_dataclass.residents[0].phone,
                 'weight': None,
                 'birth_date': None,

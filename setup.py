@@ -37,6 +37,7 @@ setup(
     python_requires='>=3.7',
     install_requires=[
         'django>=1.11',
-        'djangorestframework>=3.9'
+        'djangorestframework>=3.9',
+        'typing_extensions>=3.7.4'
     ]
 )
