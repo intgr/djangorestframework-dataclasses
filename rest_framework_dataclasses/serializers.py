@@ -4,14 +4,15 @@ import datetime
 import decimal
 import uuid
 from collections import OrderedDict
-from typing import List, Type, Dict, Any, Tuple, Mapping, NoReturn
+from typing import List, Type, Dict, Any, Tuple, Mapping, ClassVar, Union, Sequence
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model
 import rest_framework.fields
 import rest_framework.serializers
-from rest_framework.relations import PrimaryKeyRelatedField, HyperlinkedRelatedField
+from rest_framework.relations import RelatedField, PrimaryKeyRelatedField, HyperlinkedRelatedField
 from rest_framework.utils.field_mapping import get_relation_kwargs
+from typing_extensions import Literal, Protocol
 
 from rest_framework_dataclasses import field_utils
 from rest_framework_dataclasses.field_utils import DataclassDefinition, get_dataclass_definition, TypeInfo
@@ -21,6 +22,14 @@ from rest_framework_dataclasses.field_utils import DataclassDefinition, get_data
 SerializerField = rest_framework.fields.Field
 KWArgs = Dict[str, Any]
 SerializerFieldDefinition = Tuple[Type[SerializerField], KWArgs]
+
+
+class _MetaProtocol(Protocol):
+    """
+    Informs type checkers of attributes of the `Meta` attribute.
+    "Protocol" indicates that it's a duck type, not an actual subtype.
+    """
+    dataclass: ClassVar[type]
 
 
 # noinspection PyMethodMayBeStatic
@@ -54,7 +63,10 @@ class DataclassSerializer(rest_framework.serializers.Serializer):
         datetime.timedelta: rest_framework.fields.DurationField,
         uuid.UUID:          rest_framework.fields.UUIDField,
     }
-    serializer_related_field = PrimaryKeyRelatedField
+    serializer_related_field: Type[RelatedField] = PrimaryKeyRelatedField
+
+    # For type checking only
+    Meta: ClassVar[Type[_MetaProtocol]]
 
     # Override constructor to allow "anonymous" usage by passing the dataclass type and extra kwargs as a constructor
     # parameter instead of via a Meta class.
@@ -65,7 +77,7 @@ class DataclassSerializer(rest_framework.serializers.Serializer):
 
     # Utility functions
 
-    def get_dataclass_type(self):
+    def get_dataclass_type(self) -> type:
         if self.dataclass:
             assert not hasattr(self, 'Meta'), (
                 "Class '{serializer_class}' may not have `Meta` attribute when instantiated with `dataclass` parameter."
@@ -305,6 +317,7 @@ class DataclassSerializer(rest_framework.serializers.Serializer):
         child_field = child_field_class(**child_field_kwargs)
         field_kwargs = {'allow_null': type_info.is_optional, 'child': child_field}
 
+        field_class: Type[SerializerField]
         if type_info.is_mapping:
             field_class = rest_framework.fields.DictField
         else:
@@ -363,7 +376,7 @@ class DataclassSerializer(rest_framework.serializers.Serializer):
         Create a read only field for dataclass methods and properties.
         """
         field_class = rest_framework.fields.ReadOnlyField
-        field_kwargs = {}
+        field_kwargs: KWArgs = {}
 
         return field_class, field_kwargs
 
