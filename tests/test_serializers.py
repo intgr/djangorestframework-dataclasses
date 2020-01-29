@@ -9,7 +9,7 @@ from unittest import TestCase
 import typing
 from django.core.exceptions import ImproperlyConfigured
 from rest_framework import fields, serializers
-from rest_framework_dataclasses.serializers import DataclassSerializer
+from rest_framework_dataclasses.serializers import DataclassSerializer, _MetaProtocol
 
 from . import fixtures
 
@@ -89,13 +89,18 @@ class SerializerTestCase(TestCase):
         serializer = StreetSerializer()
         f = serializer.get_fields()
 
-        self.assertIsInstance(f['length'], fields.DecimalField)
-        self.assertEqual(f['length'].decimal_places, 2)
-        self.assertEqual(f['length'].max_digits, 3)
+        length = f['length']
+        assert isinstance(length, fields.DecimalField)
+        self.assertIsInstance(length, fields.DecimalField)
+        self.assertEqual(length.decimal_places, 2)
+        self.assertEqual(length.max_digits, 3)
 
         self.assertEqual(f['houses'].label, 'Houses on street')
 
-        house_fields = f['houses'].child.get_fields()
+        houses = f['houses']
+        assert isinstance(houses, fields.DictField)
+        assert isinstance(houses.child, DataclassSerializer)
+        house_fields = houses.child.get_fields()
         self.assertEqual(house_fields['address'].max_length, 20)
         self.assertEqual(house_fields['owner'].label, 'House owner')
 
@@ -224,7 +229,7 @@ class ErrorsTestCase(TestCase):
         class InvalidSerializer(DataclassSerializer):
             email = serializers.EmailField()
 
-            class Meta:
+            class Meta(_MetaProtocol):
                 dataclass = fixtures.Person
 
         # invalid `fields` specification
@@ -269,7 +274,7 @@ class ErrorsTestCase(TestCase):
         del InvalidSerializer.Meta.read_only_fields
 
         # wrong spelling of `read_only_fields`
-        InvalidSerializer.Meta.readonly_fields = ('name', )
+        InvalidSerializer.Meta.readonly_fields = ('name', )  # type: ignore
         with self.assertRaises(AssertionError):
             InvalidSerializer().get_fields()
 

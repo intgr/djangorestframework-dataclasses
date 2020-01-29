@@ -30,6 +30,9 @@ class _MetaProtocol(Protocol):
     "Protocol" indicates that it's a duck type, not an actual subtype.
     """
     dataclass: ClassVar[type]
+    fields: ClassVar[Union[Sequence[str], Literal['__all__']]]
+    read_only_fields: ClassVar[Sequence[str]]
+    exclude: ClassVar[Sequence[str]]
 
 
 # noinspection PyMethodMayBeStatic
